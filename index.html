@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    #content {
+      width: 640px;
+      height: 380px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    canvas {
+      position: absolute
+    }
+
+    video {
+      width: 640px;
+      height: 380px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="content">
+    <canvas id="canvas"></canvas>
+    <video src="kuayu.mp4" controls id="video"></video>
+  </div>
+  <div>
+    <input type="text" id="add" onkeydown="add(event)">
+  </div>
+  <script>
+    class Barrage {
+      constructor(obj, ctx) {
+        this.value = obj.value;
+        this.time = obj.time;
+        this.obj = obj;
+        this.ctx = ctx;
+      }
+      init() {
+        this.speed = this.obj.speed || this.ctx.speed;
+        this.opacity = this.obj.opacity || this.ctx.opacity;
+        this.color = this.obj.color || this.ctx.color;
+        this.fontSize = this.obj.fontSize || this.ctx.fontSize;
+
+        let span = document.createElement('span');
+
+        span.style.font = this.fontSize + 'px "microsoft yahei"';
+        span.innerText = this.value;
+        span.style.position = "absolute";
+        document.body.appendChild(span);
+        this.width = span.clientWidth;
+        document.body.removeChild(span);
+
+        this.x = this.ctx.canvas.width;
+        console.log(this.ctx)
+        this.y = this.ctx.canvas.height * Math.random();
+        this.moveX = this.speed;
+      }
+      draw() {
+        this.ctx.context.font = this.fontSize + 'px "microsoft yahei"';
+        this.ctx.context.fillStyle = this.color;
+        this.ctx.context.fillText(this.value, this.x, this.y);
+      }
+
+    }
+    let $ = document.querySelector.bind(document);
+    let video = $('video');
+    let canvas = $('canvas');
+    let data = [
+      { value: '欢迎参加珠峰', time: 0, speed: 2, color: 'blue' }
+    ]
+    class CanvasBarrage {
+      constructor(canvas, video, options = {}) {
+        this.canvas = canvas;
+        this.video = video;
+        if (!this.canvas || !this.video) return;
+        let defaults = {
+          speed: 2,
+          color: 'red',
+          opacity: 1,
+          fontSize: '30',
+          data: []
+        }
+        this.canvas.width = this.video.clientWidth;
+        this.canvas.height = this.video.clientHeight;
+
+        Object.assign(defaults, options);
+        for (let key in defaults) {
+          this[key] = defaults[key];
+        }
+        this.context = this.canvas.getContext('2d');
+        this.store = [];
+        this.makeBarrage();// 创建弹幕
+        this.render();
+      }
+      makeBarrage() {
+        this.data.forEach(obj => {
+          this.store.push(new Barrage(obj, this));
+        });
+      }
+      draw() { // 绘图
+        let time = video.currentTime;
+        this.store.forEach(barrage => {
+          if (!barrage.flag && time >= barrage.time) {
+            if (!barrage.inited) {
+              barrage.init();
+              barrage.inited = true;
+            }
+            // 移动位置 继续画
+            // 算一下 位置稍后停止
+            barrage.x -= barrage.moveX;
+            if (barrage.x <= barrage.width * -1) {
+              barrage.flag = true;
+            }
+            barrage.draw();
+          }
+        })
+      }
+      render() {
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.draw();
+        console.log(1111);
+        if (this.isPause === false) {
+          requestAnimationFrame(this.render.bind(this));
+        }
+      }
+      add(obj) {
+        this.store.push(new Barrage(obj, this));
+      };
+    }
+    let socket = new WebSocket("ws:\\localhost:3000");
+    let barrage
+    socket.onopen =  () => {
+      socket.onmessage =  (e) =>{
+        let obj = JSON.parse(e.data);
+        if(Object.prototype.toString.call(obj) === '[object Array]'){
+          barrage = new CanvasBarrage(canvas, video, {
+            data: obj
+          });
+        }else{
+         barrage.add(obj);
+        }
+      }
+    }
+    video.addEventListener('play',  () => {
+      barrage.isPause = false;
+      barrage.render(); // 点击开始渲染即可
+    })
+    video.addEventListener('pause', function () {
+      barrage.isPause = true;
+    });
+    function add(e) {
+      if (e.keyCode === 13) {
+        let obj = JSON.stringify({ value: e.target.value, speed: 2, time: video.currentTime, color: 'blue' })
+        socket.send(obj);
+      }
+    }
+  </script>
+</body>
+
+</html>
+
+
+
+// key-value // 内存型数据库 // 五种 类型 // set get // hset zry name zry // hget zry name // hgetall // lpush message 1 // rpush message
+3 // lrange message 0 -1 最后一个 // rpop // 集合 唯一的 // sadd firends // srem firends // smembers // sadd A 1 2 3 // sadd B 2 3
+4 // SINTER A B 交际 // SDIFF A B // SUNION A B ZADD ages 22 zhangsan 21 lis wangwu 1 baby WITHSCORES ZREM var redis = require('redis');
+var client = redis.createClient(6379,'ip'); client.on('error',function(err){ console.log(err); }) client.set('name','zfpx',redis.print);
